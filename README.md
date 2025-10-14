@@ -55,6 +55,7 @@ pip install -r requirements.txt
 python -m joke_bot.main
 ```
 
-
+### LICENSE
+MIT
 
 
