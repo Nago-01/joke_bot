@@ -1,34 +1,45 @@
 # Joke Bot 
 
-A simple agentic state machine built with **LangGraph** and **Python** that tells jokes interactively — demonstrating how to build LLM-style workflows.
+A simple, interactive agentic state machine built with **LangGraph** and **Python** that generates and evaluates jokes using Large Language Models (LLMs). This project demonstrates how to create a graph-based workflow with state management, user interaction, and LLM-driven tasks, showcasing an agentic system with a writer-critic loop for joke generation.
 
 
 ### Features
 
-- Category switching
-
-- Language switching
-
-- Joke fetching
-
-- Joke resetting
-
-- Graph-based state management
+- Joke Generation: Fetches jokes using Groq's Llama 3.1 model, tailored to user-selected categories and languages.
+- Joke Evaluation: A critic (also powered by Llama 3.1) evaluates jokes for humor and appropriateness, with up to 5 retries for rejected jokes.
+- Category Switching: Choose from joke categories (`neutral`, `chuck`, `all`) via an interactive menu.
+- Language Switching: Supports multiple languages (`en`, `de`, `es`) for joke generation.
+- Joke History Management: Tracks generated jokes in a stateful list, with an option to reset the history.
+- Graph-Based Workflow: Uses LangGraph to manage the agentic flow (menu → writer → critic → display/retry).
+- Interactive Console UI: Clean, emoji-enhanced interface for user inputs and joke display.
+- Configurable Prompts: Prompt templates defined in `prompt_config.yaml` for flexible LLM interactions.
 
 
 ### Structure
 ```
 joke_bot/
-    ├── __init__.py
-    ├── main.py         # Runtime logic
-    ├── models.py       # Holds Joke() and JokeState()
-    ├── nodes.py        # Holds show_menu(), fetch_joke(), update_category(), update_language(), etc
-    ├── workflow.py     # Holds the Graph logic
-    ├── utils.py        # Holds the utilities
-    └── ...
+    ├── code/
+    │   ├── __init__.py
+    │   ├── bot.py              # Main runtime logic, state, nodes, and workflow
+    │   ├── llm.py              # LLM initialization (Groq Llama model)
+    │   ├── paths.py            # File path utilities
+    │   ├── prompt_builder.py   # Prompt construction from YAML configs
+    │   └── utils.py            # YAML config loading
+    ├── config/
+    │   ├── config.yaml         # Optional general config (not used in current version)
+    │   └── prompt_config.yaml  # Prompt templates for joke writing and evaluation
+    ├── .env                    # Environment file for API keys (GROQ_API_KEY)
+    ├── requirements.txt        # Python dependencies
+    └── README.md               # The file you are reading now
 ```
 
 ## Installation
+### Prerequisites
+
+- Python 3.8+
+- Groq API Key: Sign up at console.groq.com to get a free API key for Llama 3.1 access.
+- Virtual Environment, which is recommended for dependency isolation.
+
 ### Clone the Repo
 Open a terminal and:
 ```
@@ -37,7 +48,8 @@ cd joke_bot
 ```
 
 
-Create a virtual environment
+### Set Up a virtual environment
+Create and activate a virtual environment
 ```
 python -m venv .venv
 
@@ -50,10 +62,44 @@ source .venv/bin/activate           # For macOS and Unix
 pip install -r requirements.txt
 ```
 
+### Configure Environment
+Create a .env file in the joke_bot/ root directory with your Groq API key:
+```
+echo "GROQ_API_KEY=your_groq_api_key_here" > .env
+```
+Replace `your_groq_api_key_here` with your actual key from console.groq.com.
+
 ### Run Locally
+Start the Joke Bot:
 ```
 python -m joke_bot.main
 ```
+
+### Usage
+
+- The bot displays a menu with options: `[n] Next Joke`, `[c] Change Category`, `[l] Change Language`, `[r] Reset Joke History`, `[q] Quit`.
+- Select `n` to generate a joke (via Llama 3.1), which is evaluated by a critic. Approved jokes are displayed; rejected ones retry up to 5 times.
+- Use c to switch categories (`neutral`, `chuck`, `all`), `l` for languages (`en`, `de`, `es`), or `r` to clear joke history.
+- Jokes are stored in a stateful list, tracked across interactions.
+- Quit with `q` to exit and see the final category and collected jokes.
+
+
+### How It Works
+The Joke Bot uses LangGraph to manage an agentic workflow:
+
+- State Management: A Pydantic `JokeState` model tracks jokes, category, language, retry count, and user choices.
+- Nodes: Functions like `show_menu`, `writer`, `critic`, and `show_final_joke` handle user input, joke generation, evaluation, and display.
+- Graph Flow: Starts at `show_menu`, routes to nodes based on user input (e.g., `writer` for new jokes), and loops through writer → critic → display/retry until a joke is approved or max retries (5) are reached.
+- LLM Integration: Uses Groq's Llama 3.1 model for both writing (creative, temp=0.95) and critiquing (strict, temp=0.1) jokes, with prompts defined in `config/prompt_config.yaml`.
+- Error Handling: Robust input validation and fallback logic for LLM calls.
+
+
+### Notes
+
+- Quota Limits: Ensure your Groq API key has sufficient quota (free tier allows ~30 queries/min). If you hit rate limits, check console.groq.com or wait a minute.
+- Non-LLM Option: The current version uses LLMs. For a no-LLM version using `pyjokes`, contact the maintainer or modify `bot.py` to replace LLM calls with `pyjokes.get_joke()`.
+- Extensibility: Add new categories/languages in `bot.py` or tweak prompts in `prompt_config.yaml` for custom behavior.
+
 
 ### LICENSE
 MIT
