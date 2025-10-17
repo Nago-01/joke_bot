@@ -1,3 +1,4 @@
+import numpy as np
 from functools import partial
 from pydantic import BaseModel
 from typing import Annotated, List, Literal
@@ -8,9 +9,13 @@ from .prompt_builder import build_prompt
 from .llm import call_llm
 from .utils import load_config
 from .paths import PROMPT_CONFIG_FILE_PATH
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage
 from langchain_core.language_models.chat_models import BaseChatModel
+from sentence_transformers import SentenceTransformer, util
 
+
+# Initialize embedding model for similarity checking
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 
 # DEFINE STATE
@@ -100,6 +105,20 @@ def writer(llm: BaseChatModel, state: JokeState) -> dict:
     }
 
 def critic(llm: BaseChatModel, state: JokeState) -> dict:
+    # Check semantic similarity with previous jokes
+    if state.jokes: # Checking if there are previous jokes
+        new_joke = state.latest_joke
+        new_embedding = embedding_model.encode(new_joke, convert_to_tensor=True)
+        previous_jokes = [joke.text for joke in state.jokes]
+        previous_embeddings = embedding_model.encode(previous_jokes, 
+        convert_to_tensor=True)
+        similarities = util.cos_sim(new_embedding, previous_embeddings)[0]
+        max_similarity = np.max(similarities.numpy()) if similarities.numel() > 0 else 0.0
+        if max_similarity > 0.8: # If too similar
+            print(f"Critic: Joke rejected (too similar to previous one, similarity: {max_similarity:.2f})")
+            return {"approved": False}
+        
+    # Existing logic for humour and appropriateness
     prompt = build_prompt(
         "evaluate_joke",
         joke_text=state.latest_joke,

@@ -5,13 +5,22 @@ A simple, interactive agentic state machine built with **LangGraph** and **Pytho
 
 ### Features
 
-- Joke Generation: Fetches jokes using Groq's Llama 3.1 model, tailored to user-selected categories and languages.
-- Joke Evaluation: A critic (also powered by Llama 3.1) evaluates jokes for humor and appropriateness, with up to 5 retries for rejected jokes.
+- Joke Generation: Generates jokes using Groq's Llama 3.1 model, tailored to user-selected categories and languages.
+
+- Joke Evaluation: A critic (Llama 3.1) evaluates jokes for humor, appropriateness, and uniqueness, rejecting duplicates with up to 5 retries.
+
+- Anti-Repetition: Uses `sentence-transformers` to compute semantic similarity (embeddings) and reject jokes too similar to previous ones (cosine similarity > 0.8).
+
 - Category Switching: Choose from joke categories (`neutral`, `chuck`, `all`) via an interactive menu.
+
 - Language Switching: Supports multiple languages (`en`, `de`, `es`) for joke generation.
-- Joke History Management: Tracks generated jokes in a stateful list, with an option to reset the history.
-- Graph-Based Workflow: Uses LangGraph to manage the agentic flow (menu → writer → critic → display/retry).
+
+- Joke History Management: Tracks approved jokes in a stateful list, with an option to reset the history.
+
+- Graph-Based Workflow: Uses LangGraph to manage the flow: menu → writer → critic → display/retry.
+
 - Interactive Console UI: Clean, emoji-enhanced interface for user inputs and joke display.
+
 - Configurable Prompts: Prompt templates defined in `prompt_config.yaml` for flexible LLM interactions.
 
 
@@ -78,7 +87,7 @@ python -m joke_bot.main
 ### Usage
 
 - The bot displays a menu with options: `[n] Next Joke`, `[c] Change Category`, `[l] Change Language`, `[r] Reset Joke History`, `[q] Quit`.
-- Select `n` to generate a joke (via Llama 3.1), which is evaluated by a critic. Approved jokes are displayed; rejected ones retry up to 5 times.
+- Select `n` to generate a joke (via Llama 3.1), evaluated by a critic for humor, appropriateness, and uniqueness (semantic similarity < 0.8). Approved jokes are displayed; rejected ones retry up to 5 times.
 - Use c to switch categories (`neutral`, `chuck`, `all`), `l` for languages (`en`, `de`, `es`), or `r` to clear joke history.
 - Jokes are stored in a stateful list, tracked across interactions.
 - Quit with `q` to exit and see the final category and collected jokes.
@@ -89,6 +98,7 @@ The Joke Bot uses LangGraph to manage an agentic workflow:
 
 - State Management: A Pydantic `JokeState` model tracks jokes, category, language, retry count, and user choices.
 - Nodes: Functions like `show_menu`, `writer`, `critic`, and `show_final_joke` handle user input, joke generation, evaluation, and display.
+- Anti-Repetition: The critic node uses `sentence-transformers (all-MiniLM-L6-v2)` to compute embeddings and reject jokes too similar to previous ones (cosine similarity > 0.8).
 - Graph Flow: Starts at `show_menu`, routes to nodes based on user input (e.g., `writer` for new jokes), and loops through writer → critic → display/retry until a joke is approved or max retries (5) are reached.
 - LLM Integration: Uses Groq's Llama 3.1 model for both writing (creative, temp=0.95) and critiquing (strict, temp=0.1) jokes, with prompts defined in `config/prompt_config.yaml`.
 - Error Handling: Robust input validation and fallback logic for LLM calls.
@@ -97,8 +107,10 @@ The Joke Bot uses LangGraph to manage an agentic workflow:
 ### Notes
 
 - Quota Limits: Ensure your Groq API key has sufficient quota (free tier allows ~30 queries/min). If you hit rate limits, check console.groq.com or wait a minute.
+- Security: Verify no API key leaks at github.com/Nago-01/joke_bot/security/secret-scanning.
 - Non-LLM Option: The current version uses LLMs. For a no-LLM version using `pyjokes`, contact the maintainer or modify `bot.py` to replace LLM calls with `pyjokes.get_joke()`.
 - Extensibility: Add new categories/languages in `bot.py` or tweak prompts in `prompt_config.yaml` for custom behavior.
+- Performance: The `all-MiniLM-L6-v2` model (~22MB) is lightweight. For better accuracy, try `all-mpnet-base-v2` (~110MB) by updating `bot.py.`
 
 
 ### LICENSE
