@@ -115,7 +115,7 @@ def critic(llm: BaseChatModel, state: JokeState) -> dict:
         similarities = util.cos_sim(new_embedding, previous_embeddings)[0]
         max_similarity = np.max(similarities.numpy()) if similarities.numel() > 0 else 0.0
         if max_similarity > 0.8: # If too similar
-            print(f"Critic: Joke rejected (too similar to previous one, similarity: {max_similarity:.2f})")
+            print(f"Critic: Joke rejected because it is too similar to previous one. Similarity: {max_similarity:.2f}")
             return {"approved": False}
         
     # Existing logic for humour and appropriateness
@@ -129,7 +129,6 @@ def critic(llm: BaseChatModel, state: JokeState) -> dict:
     decision = llm.invoke(messages).content.strip().lower()
     approved = "approve" in decision or "yes" in decision
 
-    # print(f"\n Critic verdict: {'Approved' if approved else 'Rejected'} | retry_count: {state.retry_count + 1}\n")
 
     # Reset retries if approved
     if approved:
@@ -163,13 +162,13 @@ def update_category(state: JokeState) -> dict:
         selection = int(get_user_input("     Enter category number: "))
         if 0 <= selection < len(categories):
             selected_category = categories[selection]
-            print(f"      Category changed to: {selected_category.upper()}")
+            print(f"Category changed to: {selected_category.upper()}")
             return {"category": selected_category}
         else:
-            print("     Invalid choice. Keeping current category.")
+            print("Invalid choice. Keeping current category.")
             return {}
     except ValueError:
-        print("     Please enter a valid number. Keeping current category.")
+        print("Please enter a valid number. Keeping current category.")
         return {}
   
 def update_language(state: JokeState) -> dict:
@@ -189,10 +188,10 @@ def update_language(state: JokeState) -> dict:
             print(f"    Language changed to: {chosen_language.upper()}")
             return {"language": chosen_language}
         else:
-            print("     Invalid choice. Keeping current language.")
+            print("Invalid choice. Keeping current language.")
             return {}
     except ValueError:
-        print("     Please enter a valid number. Keeping current language.")
+        print("Please enter a valid number. Keeping current language.")
         return {}
     
 def reset_jokes(state: JokeState) -> dict:
